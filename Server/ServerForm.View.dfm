@@ -149,9 +149,14 @@ object ServerForm1: TServerForm1
     TabOrder = 6
     OnClick = cxButton1Click
   end
-  object IdAntiFreeze1: TIdAntiFreeze
-    Left = 584
-    Top = 496
+  object cxButton4: TcxButton
+    Left = 88
+    Top = 512
+    Width = 75
+    Height = 25
+    Caption = 'cxButton4'
+    TabOrder = 7
+    OnClick = cxButton4Click
   end
   object IdTCPServer1: TIdTCPServer
     Bindings = <>
@@ -168,5 +173,28 @@ object ServerForm1: TServerForm1
   object OpenDialog1: TOpenDialog
     Left = 184
     Top = 504
+  end
+  object IdCmdTCPServer1: TIdCmdTCPServer
+    Bindings = <>
+    DefaultPort = 0
+    CommandHandlers = <>
+    ExceptionReply.Code = '500'
+    ExceptionReply.Text.Strings = (
+      'Unknown Internal Error')
+    Greeting.Code = '200'
+    Greeting.Text.Strings = (
+      'Welcome')
+    HelpReply.Code = '100'
+    HelpReply.Text.Strings = (
+      'Help follows')
+    MaxConnectionReply.Code = '300'
+    MaxConnectionReply.Text.Strings = (
+      'Too many connections. Try again later.')
+    ReplyTexts = <>
+    ReplyUnknownCommand.Code = '400'
+    ReplyUnknownCommand.Text.Strings = (
+      'Unknown Command')
+    Left = 552
+    Top = 496
   end
 end

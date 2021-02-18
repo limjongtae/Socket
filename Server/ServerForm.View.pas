@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, cxGraphics, cxControls, cxLookAndFeels, cxLookAndFeelPainters, cxContainer, cxEdit, dxSkinsCore, dxSkinGolfzon, IdBaseComponent, IdComponent, IdCustomTCPServer,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, cxGraphics, cxControls, cxLookAndFeels, cxLookAndFeelPainters, cxContainer, cxEdit, dxSkinsCore, IdBaseComponent, IdComponent, IdCustomTCPServer,
   IdTCPServer, cxTextEdit, cxMemo, IdContext, ServerUnit, Vcl.Menus, Vcl.StdCtrls, cxButtons, IdGlobal, cxLabel, cxGroupBox, CSUtils, IdSocketHandle, cxStyles, dxSkinscxPCPainter, cxCustomData,
   cxFilter, cxData, cxDataStorage, cxNavigator, cxGridCustomTableView, cxGridTableView, cxGridCustomView, cxClasses, cxGridLevel, cxGrid, cxMaskEdit, cxDropDownEdit, cxImageComboBox, IdAntiFreezeBase,
   Vcl.IdAntiFreeze, dxToggleSwitch, dxSkinBlack, dxSkinBlue, dxSkinBlueprint, dxSkinCaramel, dxSkinCoffee, dxSkinDarkRoom, dxSkinDarkSide, dxSkinDevExpressDarkStyle, dxSkinDevExpressStyle,
@@ -12,7 +12,8 @@ uses
   dxSkinOffice2007Black, dxSkinOffice2007Blue, dxSkinOffice2007Green, dxSkinOffice2007Pink, dxSkinOffice2007Silver, dxSkinOffice2010Black, dxSkinOffice2010Blue, dxSkinOffice2010Silver,
   dxSkinOffice2013DarkGray, dxSkinOffice2013LightGray, dxSkinOffice2013White, dxSkinOffice2016Colorful, dxSkinOffice2016Dark, dxSkinPumpkin, dxSkinSeven, dxSkinSevenClassic, dxSkinSharp,
   dxSkinSharpPlus, dxSkinSilver, dxSkinSpringTime, dxSkinStardust, dxSkinSummer2008, dxSkinTheAsphaltWorld, dxSkinsDefaultPainters, dxSkinValentine, dxSkinVisualStudio2013Blue,
-  dxSkinVisualStudio2013Dark, dxSkinVisualStudio2013Light, dxSkinVS2010, dxSkinWhiteprint, dxSkinXmas2008Blue, dxSkinsForm;
+  dxSkinVisualStudio2013Dark, dxSkinVisualStudio2013Light, dxSkinVS2010, dxSkinWhiteprint, dxSkinXmas2008Blue, dxSkinsForm,
+  dxSkinOffice2019Colorful, dxSkinTheBezier, dxDateRanges, IdCmdTCPServer;
 
 type
   TServerForm1 = class(TForm)
@@ -35,12 +36,13 @@ type
     cxGrid1TableView1Column5: TcxGridColumn;
     cxImageComboBox1: TcxImageComboBox;
     cxButton1: TcxButton;
-    IdAntiFreeze1: TIdAntiFreeze;
     cxGrid1TableView1Column6: TcxGridColumn;
     cxGrid1TableView1Column7: TcxGridColumn;
     IdTCPServer1: TIdTCPServer;
     dxSkinController1: TdxSkinController;
     OpenDialog1: TOpenDialog;
+    cxButton4: TcxButton;
+    IdCmdTCPServer1: TIdCmdTCPServer;
     procedure FormCreate(Sender: TObject);
     procedure cxButton1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -51,6 +53,7 @@ type
     procedure cxTextEdit1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure IdTCPServer1Status(ASender: TObject; const AStatus: TIdStatus; const AStatusText: string);
     procedure IdTCPServer1Connect(AContext: TIdContext);
+    procedure cxButton4Click(Sender: TObject);
   private
     { Private declarations }
     FServerUnit: TServerUnit;
@@ -105,6 +108,11 @@ begin
     FServerUnit.Active := False
   else
     FServerUnit.Active := True;
+end;
+
+procedure TServerForm1.cxButton4Click(Sender: TObject);
+begin
+  FServerUnit.SendCmd;
 end;
 
 procedure TServerForm1.cxTextEdit1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);

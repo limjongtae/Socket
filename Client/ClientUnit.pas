@@ -75,10 +75,14 @@ uses ClientForm.View;
 constructor TClientUnit.Create;
 begin
   // Host Setting
+  inherited Create;
+
   Host := '127.0.0.1';
   Port := 8090;
   OnConnected := DoConnected;
   OnStatus := DoStatus;
+
+  ConnectTimeout := 5000;
 
   New(FClientStatus);
 
@@ -100,17 +104,21 @@ var
   MessageRecord: TMessage;
   CommandRecord: TCommand;
   CommandBuffer, MessageBuffer: TIdBytes;
+  S: String;
 begin
-  // Send Command
-  CommandRecord.Kind := TCommandKind.SEND_MESSAGE;
-  CommandRecord.TimeStamp := Now;
+//  S := GetResponse('TEST');
+    // Send Command
+//  CommandRecord.Kind := TCommandKind.SEND_MESSAGE;
+//  CommandRecord.TimeStamp := Now;
+//
+//  CommandBuffer := RawToBytes(CommandRecord, SizeOf(CommandRecord));
+//  try
+//    IOHandler.Write(CommandBuffer);
+//  finally
+//    SetLength(CommandBuffer, 0);
+//  end;
 
-  CommandBuffer := RawToBytes(CommandRecord, SizeOf(CommandRecord));
-  try
-    IOHandler.Write(CommandBuffer);
-  finally
-    SetLength(CommandBuffer, 0);
-  end;
+
 end;
 
 procedure TClientUnit.DoDisconnected(Sender: TObject);
@@ -175,6 +183,9 @@ begin
 //    finally
 //      SetLength(MessageBuffer, 0);
 //    end;
+  SendCmd('SENDCMD');
+  if CheckResponse(LastCmdResult.NumericCode, [200]) = 200 then
+    IOHandler.WriteLn('SUCCESS');
 end;
 
 procedure TClientUnit.StatusNotify(ClientStatus: PClientStuats);
@@ -221,6 +232,7 @@ var
   LBuffer: TIdBytes;
   MessageRecord: TMessage;
   CommandRecord: TCommand;
+  S: String;
 begin
   while not Terminated do
   begin
@@ -246,24 +258,33 @@ begin
 
     StopWatch := TStopwatch.StartNew;
     try
+      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
+
+      Client.GetResponse('SENDCMD');
+      if Client.LastCmdResult.NumericCode = 200 then
+//      if Client.GetResponse([200]) = 200 then
+        Client.Received(Self, MESSAGEDATETIME + Client.IOHandler.ReadLn + Format('[Byte / %d s ]', [ElapsedMillseconds]), nil);
+
+
       // 요청이 없을경우 ReadLn할 경우 정상적인 해제가 이루어지지 않음
       // 이유는 IOHandler가 메모리를 잡고있기때문인것 같음..
-      Client.IOHandler.ReadBytes(LBuffer, SizeOf(CommandRecord));
-      BytesToRaw(LBuffer, CommandRecord, SizeOf(CommandRecord));
+
+//      Client.IOHandler.ReadBytes(LBuffer, SizeOf(CommandRecord));
+//      BytesToRaw(LBuffer, CommandRecord, SizeOf(CommandRecord));
+////      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
+//      SetLength(LBuffer, 0);
+//
+//      case CommandRecord.Kind of
+//        TCommandKind.SEND_USER_INFORMATION :
+//        begin
+//          Client.IOHandler.ReadBytes(LBuffer, SizeOf(MessageRecord));
+//          BytesToRaw(LBuffer, MessageRecord, SizeOf(MessageRecord));
+//          SetLength(LBuffer, 0);
+//          Client.Received(Self, MESSAGEDATETIME + MessageRecord.Msg + Format('[Byte / %d s ]', [ElapsedMillseconds]), nil);
+//        end;
+//      end;
+
 //      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
-      SetLength(LBuffer, 0);
-
-      case CommandRecord.Kind of
-        TCommandKind.SEND_USER_INFORMATION :
-        begin
-          Client.IOHandler.ReadBytes(LBuffer, SizeOf(MessageRecord));
-          BytesToRaw(LBuffer, MessageRecord, SizeOf(MessageRecord));
-          SetLength(LBuffer, 0);
-          Client.Received(Self, MESSAGEDATETIME + MessageRecord.Msg + Format('[Byte / %d s ]', [ElapsedMillseconds]), nil);
-        end;
-      end;
-
-      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
 //      Client.IOHandler.ReadBytes(LBuffer, SizeOf(LRecord));
 //      BytesToRaw(LBuffer, LRecord, SizeOf(LRecord));
 //      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;

@@ -4,7 +4,7 @@ interface
 
 uses
   System.Classes, System.SysUtils, IdBaseComponent, IdComponent, IdCustomTCPServer, IdTCPServer, IdContext, IdSocketHandle, IdGlobal, CSUtils, Winapi.Windows
-  ,System.Generics.Collections;
+  ,System.Generics.Collections, IdCmdTCPServer, IdReply;
 
 type
 
@@ -20,7 +20,7 @@ type
     property UserData: TUserData read FUserData write FUserData;
   end;
 
-  TServerUnit = class(TIdTCPServer)
+  TServerUnit = class(TIdCmdTCPServer) //TIdTCPServer
   published
     property OnExecute;
     property OnConnect;
@@ -56,6 +56,7 @@ type
     procedure Send(Context: TIdContext; MsgData: TMessageKind; Text: String);
     procedure SendToAll(MsgData: TMessageKind; Text: String);
     procedure SendToFile(FileName: String);
+    procedure SendCmd;
     function GetUserList: TList;
 
     // Event
@@ -123,29 +124,33 @@ var
   MessageRecord: TMessage;
   CommandRecord: TCommand;
   CommandBuffer, MessageBuffer: TIdBytes;
+  S: SmallInt;
 begin
   // Send Command
-  CommandRecord.Kind := TCommandKind.SEND_USER_INFORMATION;
-  CommandRecord.TimeStamp := Now;
+//  CommandRecord.Kind := TCommandKind.SEND_USER_INFORMATION;
+//  CommandRecord.TimeStamp := Now;
+//
+//  CommandBuffer := RawToBytes(CommandRecord, SizeOf(CommandRecord));
+//  try
+//    AContext.Connection.IOHandler.Write(CommandBuffer);
+//  finally
+//    SetLength(CommandBuffer, 0);
+//  end;
 
-  CommandBuffer := RawToBytes(CommandRecord, SizeOf(CommandRecord));
-  try
-    AContext.Connection.IOHandler.Write(CommandBuffer);
-  finally
-    SetLength(CommandBuffer, 0);
-  end;
-
-  MessageRecord.Kind := TMessageKind.TEXT;
-  MessageRecord.Msg := 'TEST';
-
-  MessageBuffer := RawToBytes(MessageRecord, SizeOf(MessageRecord));
-  try
-    AContext.Connection.IOHandler.Write(MessageBuffer);
-  finally
-    SetLength(MessageBuffer, 0);
-  end;
-
-  OnContextPrinting(MESSAGEDATETIME + 'LogInEvent ' + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
+//  if AContext.Connection.SendCmd('TEST',1) = 1 then
+//  begin
+//    MessageRecord.Kind := TMessageKind.TEXT;
+//    MessageRecord.Msg := 'TEST';
+//
+//    MessageBuffer := RawToBytes(MessageRecord, SizeOf(MessageRecord));
+//    try
+//      AContext.Connection.IOHandler.Write(MessageBuffer);
+//    finally
+//      SetLength(MessageBuffer, 0);
+//    end;
+//
+//    OnContextPrinting(MESSAGEDATETIME + 'LogInEvent ' + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
+//  end;
   // 연결 후 해당 클라이언트로부터 데이터 요청 푸시 보내기
 //  RequestUserInfomation(AContext);
   // Execute 메서드에서 해당 클라이언트 정보 저장하기
@@ -215,6 +220,9 @@ begin
 //  finally
 //    SetLength(CommandBuffer, 0); // BytesToRaw 메모리 할당영역 해제
 //  end;
+
+  if AContext.Connection.CheckResponse(AContext.Connection.LastCmdResult.NumericCode, [200]) = 200 then
+    AContext.Connection.IOHandler.WriteLn('SUCCESS');
 end;
 
 procedure TServerUnit.DoStatus(ASender: TObject; const AStatus: TIdStatus; const AStatusText: string);
@@ -280,6 +288,32 @@ var
   LBuffer: TIdBytes;
   a: SmallInt;
 begin
+end;
+
+procedure TServerUnit.SendCmd;
+var
+  i: Integer;
+  ContextList: TList;
+  ARecord: TMessage;
+  LBuffer: TIdBytes;
+  S: String;
+begin
+  try
+    ContextList := Contexts.LockList;
+  finally
+    Contexts.UnlockList;
+  end;
+
+  if ContextList.Count <= 0 then
+    Exit;
+
+
+  for i := 0 to ContextList.Count - 1 do
+  begin
+    TIdContext(ContextList.Items[i]).Connection.SendCmd('SENDCMD');
+    if TIdContext(ContextList.Items[i]).Connection.CheckResponse(TIdContext(ContextList.Items[i]).Connection.LastCmdResult.NumericCode, [200]) = 200 then
+      TIdContext(ContextList.Items[i]).Connection.IOHandler.WriteLn('SUCCES');
+  end;
 end;
 
 procedure TServerUnit.SendToAll(MsgData: TMessageKind; Text: String);
