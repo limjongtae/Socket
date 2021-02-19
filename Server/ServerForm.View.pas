@@ -13,7 +13,8 @@ uses
   dxSkinOffice2013DarkGray, dxSkinOffice2013LightGray, dxSkinOffice2013White, dxSkinOffice2016Colorful, dxSkinOffice2016Dark, dxSkinPumpkin, dxSkinSeven, dxSkinSevenClassic, dxSkinSharp,
   dxSkinSharpPlus, dxSkinSilver, dxSkinSpringTime, dxSkinStardust, dxSkinSummer2008, dxSkinTheAsphaltWorld, dxSkinsDefaultPainters, dxSkinValentine, dxSkinVisualStudio2013Blue,
   dxSkinVisualStudio2013Dark, dxSkinVisualStudio2013Light, dxSkinVS2010, dxSkinWhiteprint, dxSkinXmas2008Blue, dxSkinsForm,
-  dxSkinOffice2019Colorful, dxSkinTheBezier, dxDateRanges, IdCmdTCPServer;
+  dxSkinOffice2019Colorful, dxSkinTheBezier, dxDateRanges, IdCmdTCPServer,
+  IdIrcServer;
 
 type
   TServerForm1 = class(TForm)
@@ -42,7 +43,7 @@ type
     dxSkinController1: TdxSkinController;
     OpenDialog1: TOpenDialog;
     cxButton4: TcxButton;
-    IdCmdTCPServer1: TIdCmdTCPServer;
+    IdIRCServer1: TIdIRCServer;
     procedure FormCreate(Sender: TObject);
     procedure cxButton1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);

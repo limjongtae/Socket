@@ -174,9 +174,8 @@ object ServerForm1: TServerForm1
     Left = 184
     Top = 504
   end
-  object IdCmdTCPServer1: TIdCmdTCPServer
+  object IdIRCServer1: TIdIRCServer
     Bindings = <>
-    DefaultPort = 0
     CommandHandlers = <>
     ExceptionReply.Code = '500'
     ExceptionReply.Text.Strings = (
@@ -194,7 +193,7 @@ object ServerForm1: TServerForm1
     ReplyUnknownCommand.Code = '400'
     ReplyUnknownCommand.Text.Strings = (
       'Unknown Command')
-    Left = 552
+    Left = 600
     Top = 496
   end
 end

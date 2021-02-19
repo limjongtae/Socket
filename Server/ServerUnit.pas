@@ -4,7 +4,7 @@ interface
 
 uses
   System.Classes, System.SysUtils, IdBaseComponent, IdComponent, IdCustomTCPServer, IdTCPServer, IdContext, IdSocketHandle, IdGlobal, CSUtils, Winapi.Windows
-  ,System.Generics.Collections, IdCmdTCPServer, IdReply;
+  ,System.Generics.Collections, IdIrcServer, IdReply;
 
 type
 
@@ -20,7 +20,7 @@ type
     property UserData: TUserData read FUserData write FUserData;
   end;
 
-  TServerUnit = class(TIdCmdTCPServer) //TIdTCPServer
+  TServerUnit = class(TIdIrcServer) //TIdTCPServer
   published
     property OnExecute;
     property OnConnect;
@@ -94,6 +94,8 @@ begin
 end;
 
 constructor TServerUnit.Create;
+var
+  Reply: TIdReply;
 begin
   ContextClass := TServerContext;
   inherited Create;
@@ -102,6 +104,11 @@ begin
   OnExecute := DoExecute;
   OnConnect := DoConnect;
   OnDisConnect := DoDisconnect;
+
+  Reply := TIdReply.Create(nil);
+  Reply.SetReply(1000,'TEST');
+  ReplyTexts.Clear;
+  ReplyTexts.UpdateText(Reply);
 
 //  FUserList := TList.Create;
 end;

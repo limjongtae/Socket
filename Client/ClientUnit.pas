@@ -4,7 +4,7 @@ interface
 
 uses
   System.classes, IdBaseComponent, IdComponent, IdTCPConnection, IdTCPClient, IdGlobal, IdContext, Winapi.Windows, System.SysUtils,
-  CSUtils, IdStack, System.Diagnostics, dxGDIPlusClasses, Syncobjs;
+  CSUtils, IdStack, System.Diagnostics, dxGDIPlusClasses, Syncobjs, IdReply;
 
 const
   WAITTIME = 1000; // 응답대기시간
@@ -89,6 +89,10 @@ begin
   // Read Thread Create
   FClientThread := TClientThread.Create(Self);
   FUserData := TUserData.Create;
+
+//  Greeting.Clear;
+//  Greeting.SetReply(200,'SENDCMD');
+
 end;
 
 destructor TClientUnit.Destroy;
@@ -183,9 +187,11 @@ begin
 //    finally
 //      SetLength(MessageBuffer, 0);
 //    end;
-  SendCmd('SENDCMD');
-  if CheckResponse(LastCmdResult.NumericCode, [200]) = 200 then
-    IOHandler.WriteLn('SUCCESS');
+
+  if SendCmd('TEST') = 1000 then
+      IOHandler.WriteLn('SUCCESS');
+//  if CheckResponse(LastCmdResult.NumericCode, [200]) = 200 then
+//    IOHandler.WriteLn('SUCCESS');
 end;
 
 procedure TClientUnit.StatusNotify(ClientStatus: PClientStuats);
