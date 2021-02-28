@@ -4,7 +4,7 @@ interface
 
 uses
   System.Classes, System.SysUtils, IdBaseComponent, IdComponent, IdCustomTCPServer, IdTCPServer, IdContext, IdSocketHandle, IdGlobal, CSUtils, Winapi.Windows
-  ,System.Generics.Collections, IdIrcServer, IdReply;
+  ,System.Generics.Collections, IdIrcServer, IdReply, IdCmdTCPServer, IdCommandHandlers;
 
 type
 
@@ -56,6 +56,7 @@ type
     procedure Send(Context: TIdContext; MsgData: TMessageKind; Text: String);
     procedure SendToAll(MsgData: TMessageKind; Text: String);
     procedure SendToFile(FileName: String);
+    procedure CommandTEST(ASender: TIdCommand);
     procedure SendCmd;
     function GetUserList: TList;
 
@@ -93,9 +94,15 @@ begin
   Contexts.UnlockList;
 end;
 
+procedure TServerUnit.CommandTEST(ASender: TIdCommand);
+begin
+  ASender.Reply.SetReply(200,'TEST');
+end;
+
 constructor TServerUnit.Create;
 var
   Reply: TIdReply;
+  aCommand: TIdCommandHandler;
 begin
   ContextClass := TServerContext;
   inherited Create;
@@ -105,10 +112,17 @@ begin
   OnConnect := DoConnect;
   OnDisConnect := DoDisconnect;
 
-  Reply := TIdReply.Create(nil);
-  Reply.SetReply(1000,'TEST');
-  ReplyTexts.Clear;
-  ReplyTexts.UpdateText(Reply);
+  Greeting.Code := '200';
+  Greeting.Text.Text := 'Greeting Test';
+
+//  aCommand := CommandHandlers.Add;
+//  aCommand.Command := 'TEST';
+//  aCommand.OnCommand := CommandTEST;
+
+//  Reply := TIdReply.Create(nil);
+//  Reply.SetReply(1000,'TEST');
+//  ReplyTexts.Clear;
+//  ReplyTexts.UpdateText(Reply);
 
 //  FUserList := TList.Create;
 end;
@@ -133,6 +147,9 @@ var
   CommandBuffer, MessageBuffer: TIdBytes;
   S: SmallInt;
 begin
+//  S := AContext.Connection.GetResponse(200);
+
+  AContext.Connection.SendCmd('200');
   // Send Command
 //  CommandRecord.Kind := TCommandKind.SEND_USER_INFORMATION;
 //  CommandRecord.TimeStamp := Now;

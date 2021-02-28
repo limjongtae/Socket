@@ -109,8 +109,10 @@ var
   CommandRecord: TCommand;
   CommandBuffer, MessageBuffer: TIdBytes;
   S: String;
+  I: integer;
 begin
-//  S := GetResponse('TEST');
+
+//  i := GetResponse(200);
     // Send Command
 //  CommandRecord.Kind := TCommandKind.SEND_MESSAGE;
 //  CommandRecord.TimeStamp := Now;
@@ -188,8 +190,8 @@ begin
 //      SetLength(MessageBuffer, 0);
 //    end;
 
-  if SendCmd('TEST') = 1000 then
-      IOHandler.WriteLn('SUCCESS');
+//  if SendCmd('TEST') = 1000 then
+//      IOHandler.WriteLn('SUCCESS');
 //  if CheckResponse(LastCmdResult.NumericCode, [200]) = 200 then
 //    IOHandler.WriteLn('SUCCESS');
 end;
@@ -239,6 +241,7 @@ var
   MessageRecord: TMessage;
   CommandRecord: TCommand;
   S: String;
+  I: integer;
 begin
   while not Terminated do
   begin
@@ -258,6 +261,8 @@ begin
       end;
 //      WaitForSingleObject( Handle, 10 );
     until not Client.IOHandler.InputBufferIsEmpty;
+//
+//    until not Client.LastCmdResult.NumericCode > 0;
 
     if StopWatch.ElapsedMilliseconds > WAITTIME then
       Continue;
@@ -266,10 +271,10 @@ begin
     try
       ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
 
-      Client.GetResponse('SENDCMD');
+//      I := Client.GetResponse(200);
       if Client.LastCmdResult.NumericCode = 200 then
 //      if Client.GetResponse([200]) = 200 then
-        Client.Received(Self, MESSAGEDATETIME + Client.IOHandler.ReadLn + Format('[Byte / %d s ]', [ElapsedMillseconds]), nil);
+        Client.Received(Self, MESSAGEDATETIME + Client.LastCmdResult.Text.Text + Format('[Byte / %d s ]', [ElapsedMillseconds]), nil);
 
 
       // 요청이 없을경우 ReadLn할 경우 정상적인 해제가 이루어지지 않음
@@ -305,7 +310,7 @@ begin
 //      end;
 
     finally
-      SetLength(LBuffer, 0); // BytesToRaw 메모리 할당영역 해제
+//      SetLength(LBuffer, 0); // BytesToRaw 메모리 할당영역 해제
     end;
 //    MemoryStream := TMemoryStream.Create;
 //    try
