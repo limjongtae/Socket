@@ -20,7 +20,7 @@ type
     property UserData: TUserData read FUserData write FUserData;
   end;
 
-  TServerUnit = class(TIdIrcServer) //TIdTCPServer
+  TServerUnit = class(TIdTCPServer) //TIdTCPServer TIdIrcServer
   published
     property OnExecute;
     property OnConnect;
@@ -37,8 +37,16 @@ type
     constructor Create;
     destructor Destroy; override;
 
+    // 접속체크
+    // 접속해제체크
+
+    // 기능
+    // 전체 접속해제
+    //
+
+
     // init
-    procedure AllDisconnection;
+    function AllDisconnection: Boolean;
 
     //Eevent
     procedure DoStatus(ASender: TObject; const AStatus: TIdStatus; const AStatusText: string);
@@ -54,7 +62,20 @@ type
     procedure OnContextPrinting(Text: String);
     procedure RequestUserInfomation(Context: TidContext);
     procedure Send(Context: TIdContext; MsgData: TMessageKind; Text: String);
-    procedure SendToAll(MsgData: TMessageKind; Text: String);
+//    procedure SendToAll(MsgData: TMessageKind; Text: String);
+    procedure SendToAll(AKind: TMessageKind; AStream: TMemoryStream);
+
+    // 1. Stream으로 모든 메세지 보내기
+    // 2. 아이템 추가했을때 메세지 보내기
+    // 3. 접속리스트 받기
+    // 4. 클라이언트에서 작업상태 변경시 체크하기
+    // 5. 클라이언트랑 통신체크 주기적으로하기
+    // 6. 서버종료시 클라이언트 다 죽이고 종료하기
+    // 7. 최근 변경폴더 찾아서 클라이언트한테 보내주기
+    // 8. 컴파일 체크하기
+
+
+
     procedure SendToFile(FileName: String);
     procedure CommandTEST(ASender: TIdCommand);
     procedure SendCmd;
@@ -72,7 +93,7 @@ implementation
 
 { TServerUnit }
 
-procedure TServerUnit.AllDisconnection;
+function TServerUnit.AllDisconnection: Boolean;
 var
   i: Integer;
   ContextList: TList;
@@ -83,20 +104,24 @@ begin
 
   for i := 0 to ContextList.Count - 1 do
   begin
+    TIdContext(ContextList.Items[i]).Connection.IOHandler.WriteLn('서버에서 연결을 종료하였습니다');
     TIdContext(ContextList.Items[i]).Connection.IOHandler.WriteBufferClear;
     TIdContext(ContextList.Items[i]).Connection.IOHandler.InputBuffer.Clear;
     TIdContext(ContextList.Items[i]).Connection.IOHandler.Close;
+
 
     if TIdContext(ContextList.Items[i]).Connection.Connected then
       TIdContext(ContextList.Items[i]).Connection.Disconnect;
   end;
 
   Contexts.UnlockList;
+
+  Result := (Contexts.Count = 0);
 end;
 
 procedure TServerUnit.CommandTEST(ASender: TIdCommand);
 begin
-  ASender.Reply.SetReply(200,'TEST');
+//  ASender.Reply.SetReply(200,'TEST');
 end;
 
 constructor TServerUnit.Create;
@@ -112,8 +137,8 @@ begin
   OnConnect := DoConnect;
   OnDisConnect := DoDisconnect;
 
-  Greeting.Code := '200';
-  Greeting.Text.Text := 'Greeting Test';
+//  Greeting.Code := '200';
+//  Greeting.Text.Text := 'Greeting Test';
 
 //  aCommand := CommandHandlers.Add;
 //  aCommand.Command := 'TEST';
@@ -132,6 +157,9 @@ begin
 //  AllDisconnection;
 //  FUserList.Free;
 
+  if not AllDisconnection then
+    raise Exception.Create('모든클라이언트가 종료되지 않았습니다');
+  
   inherited Destroy;
 end;
 
@@ -149,7 +177,7 @@ var
 begin
 //  S := AContext.Connection.GetResponse(200);
 
-  AContext.Connection.SendCmd('200');
+//  AContext.Connection.SendCmd('200');
   // Send Command
 //  CommandRecord.Kind := TCommandKind.SEND_USER_INFORMATION;
 //  CommandRecord.TimeStamp := Now;
@@ -173,7 +201,7 @@ begin
 //      SetLength(MessageBuffer, 0);
 //    end;
 //
-//    OnContextPrinting(MESSAGEDATETIME + 'LogInEvent ' + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
+    OnContextPrinting(MESSAGEDATETIME + 'LogInEvent ' + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
 //  end;
   // 연결 후 해당 클라이언트로부터 데이터 요청 푸시 보내기
 //  RequestUserInfomation(AContext);
@@ -192,61 +220,73 @@ var
   MessageBuffer, CommandBuffer: TIdBytes;
 //  ACommand: TGenericRecord<TCommand>;
 //  ARecord: TGenericRecord<TMessage>;
-//  Buffer: TIdBytes;
+  Buffer: TIdBytes;
+//  Buffer: TBytes;
   Text: String;
   C: Char;
+  GenericRecord: TGenericRecord<TMessage>;
 begin
-//  AContext.Connection.IOHandler.ReadBytes(Buffer, SizeOf(Buffer));
+////  AContext.Connection.IOHandler.ReadBytes(Buffer, SizeOf(Buffer));
+////
+////  ACommand := TGenericRecord<TCommand>.Create;
+////  ACommand.Value := ACommand.ByteArrayToRecord(Buffer);
 //
-//  ACommand := TGenericRecord<TCommand>.Create;
-//  ACommand.Value := ACommand.ByteArrayToRecord(Buffer);
-
-//  AContext.Connection.IOHandler.CheckForDataOnSource(100);
-
-//  Text := AContext.Connection.IOHandler.ReadLn(IndyTextEncoding_UTF8);
-
-//  C := AContext.Connection.IOHandler.ReadChar;
-//  AContext.Connection.SendCmd()
+////  AContext.Connection.IOHandler.CheckForDataOnSource(100);
 //
-//  if C = '1' then
-//  begin
+////  Text := AContext.Connection.IOHandler.ReadLn(IndyTextEncoding_UTF8);
+//
+////  C := AContext.Connection.IOHandler.ReadChar;
+////  AContext.Connection.SendCmd()
+////
+////  if C = '1' then
+////  begin
 //    AContext.Connection.IOHandler.ReadBytes(MessageBuffer, SizeOf(TMessage));
 //    BytesToRaw(MessageBuffer, MessageRecord, SizeOf(TMessage));
 //    try
-//      case MessageRecord.Kind of
-//        TMessageKind.TEXT : OnContextPrinting(MESSAGEDATETIME + MessageRecord.Msg + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
-//      end;
+////      case MessageRecord.Kind of
+////        TMessageKind.TEXT : OnContextPrinting(MESSAGEDATETIME + MessageRecord.Msg + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
+////      end;
 //    finally
 //      SetLength(MessageBuffer, 0); // BytesToRaw 메모리 할당영역 해제
 //    end;
-//  end;
-
-
+////  end;
+//
+//
 //  OnContextPrinting(MESSAGEDATETIME + Text + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
-
-//  AContext.Connection.IOHandler.ReadBytes(CommandBuffer, SizeOf(CommandRecord));
-//  BytesToRaw(CommandBuffer, CommandRecord, SizeOf(CommandRecord));
-//  try
-//    case CommandRecord.Kind of
-//      SEND_MESSAGE :
-//      begin
+//
+////  AContext.Connection.IOHandler.ReadBytes(CommandBuffer, SizeOf(CommandRecord));
+////  BytesToRaw(CommandBuffer, CommandRecord, SizeOf(CommandRecord));
+////  try
+////    case CommandRecord.Kind of
+////      SEND_MESSAGE :
+////      begin
 //        AContext.Connection.IOHandler.ReadBytes(MessageBuffer, SizeOf(TMessage));
 //        BytesToRaw(MessageBuffer, MessageRecord, SizeOf(TMessage));
 //        try
-//          case MessageRecord.Kind of
-//            TMessageKind.TEXT : OnContextPrinting(MESSAGEDATETIME + MessageRecord.Msg + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
-//          end;
+////          case MessageRecord.Kind of
+////            TMessageKind.TEXT : OnContextPrinting(MESSAGEDATETIME + MessageRecord.Msg + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
+////          end;
 //        finally
 //          SetLength(MessageBuffer, 0); // BytesToRaw 메모리 할당영역 해제
 //        end;
-//      end;
-//    end;
-//  finally
-//    SetLength(CommandBuffer, 0); // BytesToRaw 메모리 할당영역 해제
+////      end;
+////    end;
+////  finally
+////    SetLength(CommandBuffer, 0); // BytesToRaw 메모리 할당영역 해제
+////  end;
+//
+////  if AContext.Connection.CheckResponse(AContext.Connection.LastCmdResult.NumericCode, [200]) = 200 then
+////    AContext.Connection.IOHandler.WriteLn('SUCCESS');
+///
+///
+//  GenericRecord := TGenericRecord<TMessage>.Create;
+//  GenericRecord.Value := GenericRecord.ByteArrayToRecord(Buffer);
+//
+//  MessageRecord := GenericRecord.Value;
+//
+//  case MessageRecord.Kind of
+//    TMessageKind.TEXT: ;
 //  end;
-
-  if AContext.Connection.CheckResponse(AContext.Connection.LastCmdResult.NumericCode, [200]) = 200 then
-    AContext.Connection.IOHandler.WriteLn('SUCCESS');
 end;
 
 procedure TServerUnit.DoStatus(ASender: TObject; const AStatus: TIdStatus; const AStatusText: string);
@@ -296,14 +336,14 @@ var
   RequestRecord: TMessage;
   Buffer: TIdBytes;
 begin
-  RequestRecord.Msg := '사용자 정보 요청';
-  RequestRecord.Kind := REQUEST_USER_INFORMATION;
-  Buffer := RawToBytes(RequestRecord, SizeOf(RequestRecord));
-  try
-    Context.Connection.IOHandler.Write(Buffer);
-  finally
-    SetLength(Buffer,0);
-  end;
+//  RequestRecord.Msg := '사용자 정보 요청';
+//  RequestRecord.Kind := REQUEST_USER_INFORMATION;
+//  Buffer := RawToBytes(RequestRecord, SizeOf(RequestRecord));
+//  try
+//    Context.Connection.IOHandler.Write(Buffer);
+//  finally
+//    SetLength(Buffer,0);
+//  end;
 end;
 
 procedure TServerUnit.Send(Context: TIdContext; MsgData: TMessageKind; Text: String);
@@ -312,6 +352,7 @@ var
   LBuffer: TIdBytes;
   a: SmallInt;
 begin
+
 end;
 
 procedure TServerUnit.SendCmd;
@@ -322,53 +363,52 @@ var
   LBuffer: TIdBytes;
   S: String;
 begin
-  try
-    ContextList := Contexts.LockList;
-  finally
-    Contexts.UnlockList;
-  end;
-
-  if ContextList.Count <= 0 then
-    Exit;
-
-
-  for i := 0 to ContextList.Count - 1 do
-  begin
-    TIdContext(ContextList.Items[i]).Connection.SendCmd('SENDCMD');
-    if TIdContext(ContextList.Items[i]).Connection.CheckResponse(TIdContext(ContextList.Items[i]).Connection.LastCmdResult.NumericCode, [200]) = 200 then
-      TIdContext(ContextList.Items[i]).Connection.IOHandler.WriteLn('SUCCES');
-  end;
+//  try
+//    ContextList := Contexts.LockList;
+//  finally
+//    Contexts.UnlockList;
+//  end;
+//
+//  if ContextList.Count <= 0 then
+//    Exit;
+//
+//  for i := 0 to ContextList.Count - 1 do
+//  begin
+//    TIdContext(ContextList.Items[i]).Connection.SendCmd('SENDCMD');
+//    if TIdContext(ContextList.Items[i]).Connection.CheckResponse(TIdContext(ContextList.Items[i]).Connection.LastCmdResult.NumericCode, [200]) = 200 then
+//      TIdContext(ContextList.Items[i]).Connection.IOHandler.WriteLn('SUCCES');
+//  end;
 end;
 
-procedure TServerUnit.SendToAll(MsgData: TMessageKind; Text: String);
-var
-  i: Integer;
-  ContextList: TList;
-  ARecord: TMessage;
-  LBuffer: TIdBytes;
-begin
-  try
-    ContextList := Contexts.LockList;
-  finally
-    Contexts.UnlockList;
-  end;
-
-  if ContextList.Count <= 0 then
-    Exit;
-
-  // Record Create
-  ARecord.Msg := Text;
-  ARecord.Kind := TMessageKind.TEXT;
-
-  // LBuffer Assign
-  LBuffer := RawToBytes(ARecord, SizeOf(ARecord));
-  try
-    for i := 0 to ContextList.Count - 1 do
-      TIdContext(ContextList.Items[i]).Connection.IOHandler.Write(LBuffer);
-  finally
-    SetLength(LBuffer, 0);
-  end;
-end;
+//procedure TServerUnit.SendToAll(MsgData: TMessageKind; Text: String);
+//var
+//  i: Integer;
+//  ContextList: TList;
+//  ARecord: TMessage;
+//  LBuffer: TIdBytes;
+//begin
+//  try
+//    ContextList := Contexts.LockList;
+//  finally
+//    Contexts.UnlockList;
+//  end;
+//
+//  if ContextList.Count <= 0 then
+//    Exit;
+//
+//  // Record Create
+////  ARecord.Msg := Text;
+////  ARecord.Kind := TMessageKind.TEXT;
+//
+//  // LBuffer Assign
+//  LBuffer := RawToBytes(ARecord, SizeOf(ARecord));
+//  try
+//    for i := 0 to ContextList.Count - 1 do
+//      TIdContext(ContextList.Items[i]).Connection.IOHandler.Write(LBuffer);
+//  finally
+//    SetLength(LBuffer, 0);
+//  end;
+//end;
 
 procedure TServerUnit.SendToFile(FileName: String);
 var
@@ -394,6 +434,98 @@ begin
     end;
   finally
     FileStream.Free;
+  end;
+end;
+
+procedure TServerUnit.SendToAll(AKind: TMessageKind; AStream: TMemoryStream);
+var
+  i: Integer;
+  ContextList: TList;
+  _Message: PMessage;
+  LBuffer: TIdBytes;
+  MemoryStream: TMemoryStream;
+  s1, s2: SmallInt;
+  GenericRecord: TGenericRecord<TMessage>;
+  MessageRecord: TMessage;
+  Buffer: TIdBytes;
+  Size: Int64;
+begin
+  try
+    ContextList := Contexts.LockList;
+    try
+      if ContextList.Count < 0 then
+        Exit;
+
+      // Record Create
+//      case AMessage of
+//        TEXT: AStream.ReadBuffer(Pointer(AStream));
+//      end;
+
+//      _Message.Stream := AStream;
+//      MemoryStream := TMemoryStream.Create;
+//
+//      New(_Message);
+//
+//      _Message.Kind := AKind;
+//      _Message.Stream := AStream;
+//
+//      s1 := SizeOf(_Message.Kind);
+//      s2 := SizeOf(_Message.Stream);
+//
+//      MemoryStream.Write(_Message, SizeOf(_Message));
+//      MemoryStream.Position := 0;
+
+//      _Message.Kind := AKind;
+//      _Message.Stream := AStream;
+//
+//      // LBuffer Assign
+//      LBuffer := RawToBytes(_Message, SizeOf(_Message));
+//      try
+//        for i := 0 to ContextList.Count - 1 do
+//        begin
+//          AStream.Seek(0,soFromBeginning);
+//          TIdContext(ContextList.Items[i]).Connection.IOHandler.LargeStream := True;
+//          TIdContext(ContextList.Items[i]).Connection.IOHandler.Write(LBuffer);
+//        end;
+//      finally
+//        SetLength(LBuffer, 0);
+//      end;
+//      New(MessageRecord);
+
+//      MessageRecord.Kind := AKind;
+//      MessageRecord.Size := SizeOf(AStream);
+//      AStream.Position := 0;
+//      MessageRecord.Stream := TMemoryStream.Create;
+//      MessageRecord.Stream := AStream;
+
+//      LBuffer := RawToBytes(MessageRecord, MessageRecord.Size);
+//      Size := SizeOf(MessageRecord.Kind);
+//      Size := SizeOf(MessageRecord.Stream);
+//      MessageRecord.Stream.CopyFrom(AStream, SizeOf(AStream));
+//
+//      GenericRecord := TGenericRecord<TMessage>.Create;
+//      Buffer:= GenericRecord.RecordToByteArray(MessageRecord);
+
+//      a := TGenericRecord<TMessage>.Create;
+//      a.
+      try
+        for i := 0 to ContextList.Count - 1 do
+        begin
+          TIdContext(ContextList.Items[i]).Connection.IOHandler.LargeStream := True;
+//          TIdContext(ContextList.Items[i]).Connection.IOHandler.Write(LBuffer, SizeOf(MessageRecord.Kind));
+          TIdContext(ContextList.Items[i]).Connection.IOHandler.Write(AStream, 0, True);
+//          TIdContext(ContextList.Items[i]).Connection.IOHandler.
+        end;
+      finally
+//        FreeMem(MessageRecord);
+//        SetLength(MessageRecord, 0);
+//        MemoryStream.Free;
+      end;
+    finally
+      Contexts.UnlockList;
+//      GenericRecord.Free;
+    end;
+  finally
   end;
 end;
 

@@ -8,8 +8,9 @@ interface
     TUserData = class; // forword 선언
 
     TUserConnectionState = (LOGIN, LOGOUT, DISCONNECT, UNNKOWN);
-    TMessageKind = (TEXT, IMAGE, EVENT, PUSH, NOTICE, REQUEST_USER_INFORMATION, RESPONSE_USER_INFORMATION); // 메세지, 이미지, 이벤트, 푸시, 알림
+    TMessageKind = (TEXT, IMAGE, EVENT, PUSH, NOTICE, REQUEST_USER_INFORMATION, RESPONSE_USER_INFORMATION, ITEM_LIST); // 메세지, 이미지, 이벤트, 푸시, 알림
     TCommandKind = (SEND_MESSAGE, SEND_IMAGE, SEND_USER_INFORMATION, RECV_MESSAGE, RECV_IMAGE, RECV_USER_INFORMATION);
+    // 1. 상태변경
 
     TGenericRecord<TRecordType> = class
     private
@@ -28,8 +29,11 @@ interface
 
     TMessage = packed record
       Kind: TMessageKind; // Message Kind
-      Msg: String[50]; // Message
+      Size: Int64;
+//      Stream: TMemoryStream;
     end;
+
+    PMessage = ^TMessage;
 
     TUserData = class
     private
@@ -55,8 +59,6 @@ interface
       constructor Create;
       destructor Destroy; override;
     end;
-
-  PMessage = ^TMessage;
 
   function MessageDateTime: String;
   function GetLocalIP: ShortString;
@@ -143,8 +145,12 @@ begin
 end;
 
 function TGenericRecord<TRecordType>.RecordToByteArray(ARecord: TRecordType): TIdBytes;
+var
+  LSource: PAnsiChar;
 begin
-
+  LSource := PAnsiChar(@aRecord);
+  SetLength(Result, SizeOf(TRecordType));
+  Move(LSource[0], Result[0], SizeOf(TRecordType));
 end;
 
 end.

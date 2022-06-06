@@ -14,36 +14,67 @@ uses
   dxSkinSharpPlus, dxSkinSilver, dxSkinSpringTime, dxSkinStardust, dxSkinSummer2008, dxSkinTheAsphaltWorld, dxSkinsDefaultPainters, dxSkinValentine, dxSkinVisualStudio2013Blue,
   dxSkinVisualStudio2013Dark, dxSkinVisualStudio2013Light, dxSkinVS2010, dxSkinWhiteprint, dxSkinXmas2008Blue, dxSkinsForm,
   dxSkinOffice2019Colorful, dxSkinTheBezier, dxDateRanges, IdCmdTCPServer,
-  IdIrcServer;
+  IdIrcServer, cxTL, cxTLdxBarBuiltInMenu, cxInplaceContainer,
+  dxLayoutContainer, dxLayoutcxEditAdapters, dxLayoutControlAdapters,
+  dxLayoutControl, dxLayoutLookAndFeels;
 
 type
   TServerForm1 = class(TForm)
+    IdTCPServer1: TIdTCPServer;
+    dxSkinController1: TdxSkinController;
+    OpenDialog1: TOpenDialog;
+    IdIRCServer1: TIdIRCServer;
+    dxLayoutControl1Group_Root: TdxLayoutGroup;
+    dxLayoutControl1: TdxLayoutControl;
+    dxLayoutItem1: TdxLayoutItem;
+    cxTreeList1: TcxTreeList;
+    dxLayoutItem2: TdxLayoutItem;
     cxMemo1: TcxMemo;
+    dxLayoutItem3: TdxLayoutItem;
+    cxImageComboBox1: TcxImageComboBox;
+    dxLayoutItem4: TdxLayoutItem;
     cxTextEdit1: TcxTextEdit;
-    cxButton3: TcxButton;
-    cxTextEdit2: TcxTextEdit;
-    cxTextEdit3: TcxTextEdit;
-    cxLabel1: TcxLabel;
-    cxLabel2: TcxLabel;
-    cxGroupBox1: TcxGroupBox;
-    cxGrid1Level1: TcxGridLevel;
+    dxLayoutItem5: TdxLayoutItem;
     cxGrid1: TcxGrid;
-    cxButton2: TcxButton;
     cxGrid1TableView1: TcxGridTableView;
     cxGrid1TableView1Column1: TcxGridColumn;
     cxGrid1TableView1Column2: TcxGridColumn;
     cxGrid1TableView1Column3: TcxGridColumn;
-    cxGrid1TableView1Column4: TcxGridColumn;
     cxGrid1TableView1Column5: TcxGridColumn;
-    cxImageComboBox1: TcxImageComboBox;
-    cxButton1: TcxButton;
+    cxGrid1TableView1Column4: TcxGridColumn;
     cxGrid1TableView1Column6: TcxGridColumn;
     cxGrid1TableView1Column7: TcxGridColumn;
-    IdTCPServer1: TIdTCPServer;
-    dxSkinController1: TdxSkinController;
-    OpenDialog1: TOpenDialog;
+    cxGrid1Level1: TcxGridLevel;
+    dxLayoutItem6: TdxLayoutItem;
+    cxGroupBox1: TcxGroupBox;
+    cxButton3: TcxButton;
+    cxLabel1: TcxLabel;
+    cxLabel2: TcxLabel;
+    cxTextEdit2: TcxTextEdit;
+    cxTextEdit3: TcxTextEdit;
+    dxLayoutItem7: TdxLayoutItem;
+    cxButton5: TcxButton;
+    dxLayoutItem8: TdxLayoutItem;
     cxButton4: TcxButton;
-    IdIRCServer1: TIdIRCServer;
+    dxLayoutItem9: TdxLayoutItem;
+    cxButton1: TcxButton;
+    dxLayoutItem10: TdxLayoutItem;
+    cxButton2: TcxButton;
+    dxLayoutItem11: TdxLayoutItem;
+    cxButton6: TcxButton;
+    dxLayoutAutoCreatedGroup5: TdxLayoutAutoCreatedGroup;
+    dxLayoutAutoCreatedGroup6: TdxLayoutAutoCreatedGroup;
+    dxLayoutAutoCreatedGroup1: TdxLayoutAutoCreatedGroup;
+    dxLayoutAutoCreatedGroup7: TdxLayoutAutoCreatedGroup;
+    dxLayoutLookAndFeelList1: TdxLayoutLookAndFeelList;
+    dxLayoutSkinLookAndFeel1: TdxLayoutSkinLookAndFeel;
+    cxTreeList2: TcxTreeList;
+    dxLayoutItem12: TdxLayoutItem;
+    Button1: TButton;
+    dxLayoutItem13: TdxLayoutItem;
+    dxLayoutAutoCreatedGroup2: TdxLayoutAutoCreatedGroup;
+    cxTreeList1Column1: TcxTreeListColumn;
+    cxTreeList2Column1: TcxTreeListColumn;
     procedure FormCreate(Sender: TObject);
     procedure cxButton1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -55,6 +86,9 @@ type
     procedure IdTCPServer1Status(ASender: TObject; const AStatus: TIdStatus; const AStatusText: string);
     procedure IdTCPServer1Connect(AContext: TIdContext);
     procedure cxButton4Click(Sender: TObject);
+    procedure cxButton5Click(Sender: TObject);
+    procedure cxButton6Click(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
     FServerUnit: TServerUnit;
@@ -84,6 +118,21 @@ implementation
 {$R *.dfm}
 
 { TForm2 }
+
+procedure TServerForm1.Button1Click(Sender: TObject);
+var
+  Stream: TMemoryStream;
+begin
+  Stream := TMemoryStream.Create;
+  try
+    cxTreeList1.SaveToStream(Stream);
+    Stream.Position := 0;
+    cxTreeList2.Clear;
+    cxTreeList2.LoadFromStream(Stream);
+  finally
+    Stream.Free;
+  end;
+end;
 
 procedure TServerForm1.cxButton1Click(Sender: TObject);
 var
@@ -116,12 +165,78 @@ begin
   FServerUnit.SendCmd;
 end;
 
+procedure TServerForm1.cxButton5Click(Sender: TObject);
+var
+  Node: TcxTreeListNode;
+begin
+  cxTreeList1.BeginUpdate;
+  try
+
+  //한줄에 전부 다 넣기
+
+  Node := cxTreeList1.Root.AddChild; //Root에서 새로운 자식노드 추가
+
+  //ex) Values[컬럼명.ItemIndex] := 값;
+
+  Node.Values[cxTreeList1Column1.ItemIndex] := 1;
+
+//  Node.Values[cxTreeList1Column2.ItemIndex] := 'TeakHyun Kang';
+//
+//  //노드에 자식노드 추가해서 넣기
+//
+  Node := cxTreeList1.Root.AddChild; //노드 추가
+  Node.Values[cxTreeList1Column1.ItemIndex] := 2;
+//
+  with cxTreeList1.AddNode(nil, Node, nil, tlamAddChild) do //현재 추가된 노드에서 자식노드 추가
+  begin
+    Values[cxTreeList1Column1.ItemIndex] := 'TeakHyun';
+  end;
+//
+//
+//  Node := cxTreeList1.Root.AddChild;
+//  Node.Values[cxTreeList1Column1.ItemIndex] := 3;
+//
+//  with cxTreeList1.AddNode(nil, Node, nil, tlamAddChild) do
+//  begin
+//    Values[cxTreeList1Column2.ItemIndex] := 'Kang';
+//  end;
+
+  finally
+    cxTreeList1.EndUpdate;
+  end;
+end;
+
+procedure TServerForm1.cxButton6Click(Sender: TObject);
+var
+  Stream: TMemoryStream;
+begin
+  Stream := TMemoryStream.Create;
+
+//  cxTreeList1.StoreToStream(Stream,'TEST');
+   cxTreeList1.SaveToStream(Stream);
+  FServerUnit.SendToAll(ITEM_LIST, Stream);
+
+  Stream.Free;
+
+//  FServerUnit.SendToStream(ITEM_LIST, Stream);
+end;
+
 procedure TServerForm1.cxTextEdit1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+var
+  MemoryStream: TMemoryStream;
+  SendString: String;
 begin
   if Key = VK_RETURN then
   begin
-    FServerUnit.SendToAll(TMessageKind.TEXT, cxTextEdit1.Text);
-    cxTextEdit1.Text := EmptyStr;
+    MemoryStream := TMemoryStream.Create;
+    try
+      SendString := cxTextEdit1.Text;
+      MemoryStream.WriteBuffer(Pointer(SendString)^, Length(SendString));
+      FServerUnit.SendToAll(TMessageKind.TEXT, MemoryStream);
+      cxTextEdit1.Text := EmptyStr;
+    finally
+      MemoryStream.Free;
+    end;
   end;
 end;
 
@@ -268,9 +383,9 @@ procedure TServerForm1.DoExecute(AContext: TIdContext);
 var
   ReadString: String;
 begin
-  ReadString := AContext.Connection.IOHandler.ReadLn(enUTF8);
+//  ReadString := AContext.Connection.IOHandler.ReadLn(enUTF8);
 
-  cxMemo1.Lines.Add(MESSAGEDATETIME + ReadString);
+//  cxMemo1.Lines.Add(MESSAGEDATETIME + ReadString);
 end;
 
 procedure TServerForm1.DoStatus(ASender: TObject; const AStatus: TIdStatus; const AStatusText: string);

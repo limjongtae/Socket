@@ -11,7 +11,9 @@ uses
   dxSkinOffice2007Silver, dxSkinOffice2010Black, dxSkinOffice2010Blue, dxSkinOffice2010Silver, dxSkinOffice2013DarkGray, dxSkinOffice2013LightGray, dxSkinOffice2013White, dxSkinOffice2016Colorful,
   dxSkinOffice2016Dark, dxSkinPumpkin, dxSkinSeven, dxSkinSevenClassic, dxSkinSharp, dxSkinSharpPlus, dxSkinSilver, dxSkinSpringTime, dxSkinStardust, dxSkinSummer2008, dxSkinTheAsphaltWorld,
   dxSkinsDefaultPainters, dxSkinValentine, dxSkinVisualStudio2013Blue, dxSkinVisualStudio2013Dark, dxSkinVisualStudio2013Light, dxSkinVS2010, dxSkinWhiteprint, dxSkinXmas2008Blue,
-  Jpeg, dxGDIPlusClasses, dxSkinOffice2019Colorful, dxSkinTheBezier;
+  Jpeg, dxGDIPlusClasses, dxSkinOffice2019Colorful, dxSkinTheBezier,
+  Vcl.ComCtrls, cxListView, cxCustomData, cxStyles, cxTL, cxTLdxBarBuiltInMenu,
+  dximctrl, System.ImageList, Vcl.ImgList, cxImageList, cxInplaceContainer;
 
 type
   TClientForm1 = class(TForm)
@@ -40,6 +42,10 @@ type
     cxImage1: TcxImage;
     cxButton1: TcxButton;
     cxButton4: TcxButton;
+    cxImageList1: TcxImageList;
+    dxImageListBox1: TdxImageListBox;
+    cxButton5: TcxButton;
+    cxTreeList1: TcxTreeList;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure cxButton2Click(Sender: TObject);
@@ -47,6 +53,8 @@ type
     procedure SendToServerKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure cxButton1Click(Sender: TObject);
     procedure cxButton4Click(Sender: TObject);
+    procedure cxTreeList1Click(Sender: TObject);
+    procedure cxButton5Click(Sender: TObject);
   private
     { Private declarations }
     FClientUnit: TClientUnit;
@@ -55,6 +63,8 @@ type
     { Public declarations }
     procedure StatusNotify(ClientStatus: PClientStuats);
     procedure OnReceived(ASender: TObject; Text: String; Image: TdxSmartImage);
+    procedure OnMessage(ASender: TObject; AMessage: string);
+    procedure OnItemList(ASender: TObject; AMemoryStream: TMemoryStream);
   end;
 
 var
@@ -105,10 +115,25 @@ begin
     with IdTCPClient1 do
     begin
       Host := '127.0.0.1';
-       Port := 8090;
+      Port := 8090;
       Connect;
     end;
   end;
+end;
+
+
+procedure TClientForm1.cxButton5Click(Sender: TObject);
+var
+  Node: TcxTreeListNode;
+begin
+  Node := TcxTreeListNode.Create(cxTreeList1);
+end;
+
+procedure TClientForm1.cxTreeList1Click(Sender: TObject);
+var
+  iTreeNode: TTreeNode;
+begin
+  ShowMessage(cxTreeList1.FocusedNode.Parent.Texts[0] + '/' + cxTreeList1.FocusedNode.Texts[0]);
 end;
 
 procedure TClientForm1.SendToServerKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -130,13 +155,27 @@ begin
   FClientUnit := TClientUnit.Create;
   FClientUnit.OnReceived := OnReceived;
   FClientUnit.OnStatusNotify := StatusNotify;
+  FClientUnit.OnClientMessage := OnMessage;
+  FClientUnit.OnSendItemList := OnItemList;
 
-  //
   cxLabel4.Caption := CSUtils.GetComputerName;
   cxLabel6.Caption := TOSVersion.ToString;
   cxLabel16.Caption := FClientUnit.UserData.IP;
 
+
   FClientUnit.Connect;
+end;
+
+procedure TClientForm1.OnItemList(ASender: TObject; AMemoryStream: TMemoryStream);
+begin
+  AMemoryStream.Position := 0;
+//  cxTreeList1.RestoreFromStream(AMemoryStream, True, True, 'TEST');
+  cxTreeList1.LoadFromStream(AMemoryStream);
+end;
+
+procedure TClientForm1.OnMessage(ASender: TObject; AMessage: string);
+begin
+  cxMemo1.Lines.Add(AMessage);
 end;
 
 procedure TClientForm1.OnReceived(ASender: TObject; Text: String; Image: TdxSmartImage);

@@ -21,6 +21,8 @@ type
   // User Event
   TClientReceivedEvent = procedure (Sender: TObject; Text: String; Image: TdxSmartImage) of object; // 서버로부터 데이터를 받았을때
   TClientStatusNotifyEvent = procedure (AStatus: PClientStuats) of object; // 클라이언트 상태 이벤트
+  TClientMessage = procedure (Sender: TObject; AMessage: string) of object;
+  TSendItemList = procedure (Sender: TObject; AMemoryStream: TMemoryStream) of object;
 
   // Object
   TClientUnit = class; // foward 선언
@@ -45,7 +47,12 @@ type
     FComputerName: ShortString;
     FClientStatus: PClientStuats;
     FClientThread: TClientThread;
+    FClientMessage: TClientMessage;
+    FSendItemList: TSendItemList;
     FUserData: TUserData;
+
+    procedure ClientMessage(ASender: TObject; AMessage: string);
+    procedure SendItemList(ASender: TObject; AMemoryStream: TMemoryStream);
   public
     constructor Create;
     destructor Destroy; override;
@@ -60,8 +67,11 @@ type
     procedure StatusNotify(ClientStatus: PClientStuats); // 상태변경 알림
     procedure DoStatus(ASender: TObject; const AStatus: TIdStatus; const AStatusText: string); //
 
+
     property OnReceived: TClientReceivedEvent read FOnReceived write FOnReceived;
     property OnStatusNotify: TClientStatusNotifyEvent read FOnStatusNotify write FOnStatusNotify;
+    property OnClientMessage: TClientMessage read FClientMessage write FClientMessage;
+    property OnSendItemList: TSendItemList read FSendItemList write FSendItemList;
 
     property UserData: TUserData read FUserData;
   end;
@@ -124,12 +134,18 @@ begin
 //    SetLength(CommandBuffer, 0);
 //  end;
 
-
+  ClientMessage(Sender, 'Connect');
 end;
 
 procedure TClientUnit.DoDisconnected(Sender: TObject);
 begin
-  //
+  ClientMessage(Sender, 'DisConnect');
+end;
+
+procedure TClientUnit.ClientMessage(ASender: TObject; AMessage: string);
+begin
+  if Assigned(FClientMessage) then
+    FClientMessage(ASender, AMessage);
 end;
 
 procedure TClientUnit.DoStatus(ASender: TObject; const AStatus: TIdStatus; const AStatusText: string);
@@ -180,20 +196,26 @@ begin
 //  end;
 
   //SendMessage
-//    MessageRecord.Kind := TMessageKind.TEXT;
-//    MessageRecord.Msg := Text;
-//
-//    MessageBuffer := RawToBytes(MessageRecord, SizeOf(TMessage));
-//    try
-//      IOHandler.Write(MessageBuffer);
-//    finally
-//      SetLength(MessageBuffer, 0);
-//    end;
+  MessageRecord.Kind := TMessageKind.TEXT;
+//  MessageRecord.Msg := Text;
+
+  MessageBuffer := RawToBytes(MessageRecord, SizeOf(TMessage));
+  try
+    IOHandler.Write(MessageBuffer);
+  finally
+    SetLength(MessageBuffer, 0);
+  end;
 
 //  if SendCmd('TEST') = 1000 then
 //      IOHandler.WriteLn('SUCCESS');
 //  if CheckResponse(LastCmdResult.NumericCode, [200]) = 200 then
 //    IOHandler.WriteLn('SUCCESS');
+end;
+
+procedure TClientUnit.SendItemList(ASender: TObject; AMemoryStream: TMemoryStream);
+begin
+  if Assigned(OnSendItemList) then
+    OnSendItemList(ASender, AMemoryStream);
 end;
 
 procedure TClientUnit.StatusNotify(ClientStatus: PClientStuats);
@@ -235,13 +257,20 @@ procedure TClientThread.Execute;
 var
   StopWatch: TStopwatch; // 요청시간 계산
   ElapsedMillseconds, ReadStreamSize: Int64;
-  MemoryStream: TMemoryStream;
+  Stream: TMemoryStream;
   Image: TdxSmartImage;
   LBuffer: TIdBytes;
-  MessageRecord: TMessage;
+  _Message: PMessage;
   CommandRecord: TCommand;
   S: String;
   I: integer;
+  SendMessage: String;
+  Size: TBytes;
+  SendStream: TMemoryStream;
+  GenericRecord: TGenericRecord<TMessage>;
+  Buffer: TIdBytes;
+  MessageRecord: TMessage;
+  reader: TStreamReader;
 begin
   while not Terminated do
   begin
@@ -269,12 +298,13 @@ begin
 
     StopWatch := TStopwatch.StartNew;
     try
-      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
 
-//      I := Client.GetResponse(200);
-      if Client.LastCmdResult.NumericCode = 200 then
+
+      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
+//      if Client.LastCmdResult.NumericCode = 200 then
 //      if Client.GetResponse([200]) = 200 then
-        Client.Received(Self, MESSAGEDATETIME + Client.LastCmdResult.Text.Text + Format('[Byte / %d s ]', [ElapsedMillseconds]), nil);
+//      Client.DoClientMessage(nil, Client.IOHandler.ReadLn());
+//        Client.Received(Self, MESSAGEDATETIME + Client.LastCmdResult.Text.Text + Format('[Byte / %d s ]', [ElapsedMillseconds]), nil);
 
 
       // 요청이 없을경우 ReadLn할 경우 정상적인 해제가 이루어지지 않음
@@ -296,20 +326,125 @@ begin
 //      end;
 
 //      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
-//      Client.IOHandler.ReadBytes(LBuffer, SizeOf(LRecord));
-//      BytesToRaw(LBuffer, LRecord, SizeOf(LRecord));
+
+// 20220529 기존소스
+//      Client.IOHandler.ReadBytes(LBuffer, SizeOf(_Message));
+//      BytesToRaw(LBuffer, _Message, SizeOf(_Message));
+//      _Message := Default(PM);
+
+//      New(_Message);
+//      Stream := TMemoryStream.Create;
+//      Client.IOHandler.ReadStream(Stream, SizeOf(_Message));
+//      Stream.Position := 0;
+//      Stream.ReadBuffer(Pointer(_Message.Kind)^, SizeOf(Pointer(_Message.Kind)^));
+//      Stream.ReadBuffer(Pointer(_Message.Stream), SizeOf(Pointer(_Message.Stream)));
+//Client.IOHandler.read
+//      Client.IOHandler.ReadBytes(Buffer, SizeOf(Buffer));
+//      reader := reader.Create(Stream);
+//      while not reader.EndOfStream do
+//        reader.
+
+//      GenericRecord := TGenericRecord<TMessage>.Create;
+//      GenericRecord.Value := GenericRecord.ByteArrayToRecord(Buffer);
+//      MessageRecord.Stream := TMemoryStream.Create;
+//      MessageRecord := GenericRecord.Value;
+//      MessageRecord.Stream.
+//      Stream := TMemoryStream.Create;
+//      Client.IOHandler.ReadStream(Stream, SizeOf(MessageRecord));
+
+//      Client.IOHandler.ReadStream(Stream, SizeOf(_Message));
+
+
+//        Stream := TMemoryStream.Create;
+//        Client.IOHandler.LargeStream := True;
+//        Client.IOHandler.ReadStream(Stream, 205);
+//        Stream.Position := 0;
+//        Client.SendItemList(Self, Stream);
+//        Client.ClientMessage(Self, MESSAGEDATETIME + 'ITEMLIST' + Format('[Byte / %d s ]', [ElapsedMillseconds]));
+//        Stream.Free;
+
+    Stream := TMemoryStream.Create;
+    try
+      Client.IOHandler.LargeStream := True;
+      Client.IOHandler.ReadStream(Stream);
+      Stream.Position := 0;
+      Client.SendItemList(Self, Stream);
+    finally
+      Stream.Free;
+//      Image.Free;
+    end;
+
+
+
+//      Client.IOHandler.ReadBytes(LBuffer, SizeOf(MessageRecord));
+//      BytesToRaw(LBuffer, MessageRecord, SizeOf(MessageRecord));
+//      MessageRecord.Stream.Position := 0;
+
+
+//        MessageRecord.Stream.Position := 0;
+
+//        Stream := TMemoryStream.Create;
+//        Stream.LoadFromStream(MessageRecord.Stream);
+
+//        case MessageRecord.Kind of
+//          TEXT: Client.ClientMessage(Self, MESSAGEDATETIME + 'TEXT' + Format('[Byte / %d s ]', [ElapsedMillseconds]));
+//          ITEM_LIST:
+//          begin
+//            Stream := TMemoryStream.Create;
+//            Client.IOHandler.ReadStream(Stream, MessageRecord.Size);
+//            Stream.Position := 0;
+//            Client.SendItemList(Self, Stream);
+//            Client.ClientMessage(Self, MESSAGEDATETIME + 'ITEMLIST' + Format('[Byte / %d s ]', [ElapsedMillseconds]));
+//            Stream.Free;
+//          end;
+//        end;
+
+
+//      MemoryStream.Read(_Message.Stream)
+//      Client.IOHandler.LargeStream := True;
+//      Client.IOHandler.ReadStream(MemoryStream, );
+
+
 //      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
-//
-//      case LRecord.Kind of
-//        TEXT : Client.Received(Self, MESSAGEDATETIME + LRecord.Msg + Format('[Byte / %d s ]', [ElapsedMillseconds]), nil);
-//        REQUEST_USER_INFORMATION :
+
+//      MemoryStream.ReadBuffer(Pointer(_Message.Stream)^, SizeOf(Pointer(_Message.Stream)^));
+//      SetLength(_Message, SizeOf(Stream.Size));
+//      Stream.ReadBuffer(Pointer(SendMessage)^, Stream.Size);
+//      Stream.ReadData(_Message.Kind, SizeOf(_Message.Kind));
+//      Stream.ReadBuffer(_Message.Kind, SizeOf(_Message.Kind));
+//      Stream.ReadBuffer(_Message.Stream, SizeOf(_Message.Stream));
+//      SizeOf(_Message.Kind);
+
+//      case _Message.Kind of
+//        TEXT :
 //        begin
+//          Stream.Position := 0;
+//          Stream.ReadBuffer(Pointer(SendMessage), SizeOf(_Message.Stream));
+//          Client.ClientMessage(Self, MESSAGEDATETIME + SendMessage + Format('[Byte / %d s ]', [ElapsedMillseconds]));
+//        end;
+//        ITEM_LIST :
+//        begin
+////          Stream.Position := 0;
+////          Stream.Read(_Message, SizeOf(_Message));
+////          SendStream.ReadBuffer(, SizeOf(_Message.Stream));
+//          Client.SendItemList(Self, Stream);
+////          SendStream.Free;
+//        end
+//        else
+//          Client.ClientMessage(Self, MESSAGEDATETIME + '정의되지않은 메세지' + Format('[Byte / %d s ]', [ElapsedMillseconds]));
+////        REQUEST_USER_INFORMATION :
+////        begin
 ////          Client.UserInformationResponese;
 ////          Client.Received(Self, MESSAGEDATETIME + LRecord.Msg + Format('[Byte / %d s ]', [ElapsedMillseconds]), nil);
-//        end;
+////        end;
 //      end;
-
+//
+////      _Message.Stream.Free;
+//      FreeMem(_Message);
+//      Stream.Free;
     finally
+//      Stream.Free;
+//      GenericRecord.Free;
 //      SetLength(LBuffer, 0); // BytesToRaw 메모리 할당영역 해제
     end;
 //    MemoryStream := TMemoryStream.Create;
