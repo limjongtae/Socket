@@ -29,8 +29,7 @@ interface
 
     TMessage = packed record
       Kind: TMessageKind; // Message Kind
-      Size: Int64;
-//      Stream: TMemoryStream;
+      Size: LongInt;
     end;
 
     PMessage = ^TMessage;
@@ -64,8 +63,26 @@ interface
   function GetLocalIP: ShortString;
   function GetComputerName: ShortString;
   function GetWindowsVersion: ShortString;
+  function StrToBytes(const AValue: WideString): TBytes;
+  function BytesToStr(const AValue: TBytes): WideString;
 
 implementation
+
+function BytesToStr(const AValue: TBytes): WideString;
+begin
+  SetLength(Result, Length(AValue) div SizeOf(WideChar));
+
+  if Length(Result) > 0 then
+    Move(AValue[0], Result[1], Length(AValue));
+end;
+
+function StrToBytes(const AValue: WideString): TBytes;
+begin
+  SetLength(Result, Length(AValue) * SizeOf(WideChar));
+
+  if Length(Result) > 0 then
+    Move(AValue[1], Result[0], Length(Result));
+end;
 
 function MessageDateTime: String;
 begin

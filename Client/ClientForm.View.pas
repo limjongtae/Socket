@@ -78,23 +78,13 @@ uses CSUtils;
 
 procedure TClientForm1.cxButton1Click(Sender: TObject);
 var
-  MemoryStream: TMemoryStream;
-  Jpeg: TJPEGImage;
+  Stream: TStream;
 begin
-  MemoryStream := TMemoryStream.Create;
+  Stream := TMemoryStream.Create;
   try
-    IdTCPClient1.IOHandler.LargeStream := True;
-    IdTCPClient1.IOHandler.ReadStream(MemoryStream);
-
-    MemoryStream.Position := 0;
-
-    Jpeg := TJPEGImage.Create;
-    Jpeg.LoadFromStream(MemoryStream);
-
-    cxImage1.Picture.Graphic := Jpeg;
+    FClientUnit.SendStream(Stream);
   finally
-    MemoryStream.Free;
-    Jpeg.Free;
+    Stream.Free;
   end;
 end;
 
@@ -121,7 +111,6 @@ begin
   end;
 end;
 
-
 procedure TClientForm1.cxButton5Click(Sender: TObject);
 var
   Node: TcxTreeListNode;
@@ -140,6 +129,9 @@ procedure TClientForm1.SendToServerKeyDown(Sender: TObject; var Key: Word; Shift
 begin
   if Key = VK_RETURN then
   begin
+    if Length(SendToServer.Text) < 1 then
+      Exit;
+
     FClientUnit.Send(SendToServer.Text);
     SendToServer.Text := EmptyStr;
   end;

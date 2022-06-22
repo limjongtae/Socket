@@ -16,7 +16,8 @@ uses
   dxSkinOffice2019Colorful, dxSkinTheBezier, dxDateRanges, IdCmdTCPServer,
   IdIrcServer, cxTL, cxTLdxBarBuiltInMenu, cxInplaceContainer,
   dxLayoutContainer, dxLayoutcxEditAdapters, dxLayoutControlAdapters,
-  dxLayoutControl, dxLayoutLookAndFeels;
+  dxLayoutControl, dxLayoutLookAndFeels, cxCustomListBox, cxListBox,
+  dxActivityIndicator, dxSparkline, cxCheckBox, dxRangeControl;
 
 type
   TServerForm1 = class(TForm)
@@ -30,8 +31,6 @@ type
     cxTreeList1: TcxTreeList;
     dxLayoutItem2: TdxLayoutItem;
     cxMemo1: TcxMemo;
-    dxLayoutItem3: TdxLayoutItem;
-    cxImageComboBox1: TcxImageComboBox;
     dxLayoutItem4: TdxLayoutItem;
     cxTextEdit1: TcxTextEdit;
     dxLayoutItem5: TdxLayoutItem;
@@ -45,36 +44,23 @@ type
     cxGrid1TableView1Column6: TcxGridColumn;
     cxGrid1TableView1Column7: TcxGridColumn;
     cxGrid1Level1: TcxGridLevel;
-    dxLayoutItem6: TdxLayoutItem;
-    cxGroupBox1: TcxGroupBox;
-    cxButton3: TcxButton;
-    cxLabel1: TcxLabel;
-    cxLabel2: TcxLabel;
-    cxTextEdit2: TcxTextEdit;
-    cxTextEdit3: TcxTextEdit;
     dxLayoutItem7: TdxLayoutItem;
     cxButton5: TcxButton;
-    dxLayoutItem8: TdxLayoutItem;
-    cxButton4: TcxButton;
-    dxLayoutItem9: TdxLayoutItem;
-    cxButton1: TcxButton;
-    dxLayoutItem10: TdxLayoutItem;
-    cxButton2: TcxButton;
-    dxLayoutItem11: TdxLayoutItem;
-    cxButton6: TcxButton;
     dxLayoutAutoCreatedGroup5: TdxLayoutAutoCreatedGroup;
-    dxLayoutAutoCreatedGroup6: TdxLayoutAutoCreatedGroup;
     dxLayoutAutoCreatedGroup1: TdxLayoutAutoCreatedGroup;
-    dxLayoutAutoCreatedGroup7: TdxLayoutAutoCreatedGroup;
     dxLayoutLookAndFeelList1: TdxLayoutLookAndFeelList;
     dxLayoutSkinLookAndFeel1: TdxLayoutSkinLookAndFeel;
-    cxTreeList2: TcxTreeList;
-    dxLayoutItem12: TdxLayoutItem;
-    Button1: TButton;
-    dxLayoutItem13: TdxLayoutItem;
-    dxLayoutAutoCreatedGroup2: TdxLayoutAutoCreatedGroup;
     cxTreeList1Column1: TcxTreeListColumn;
-    cxTreeList2Column1: TcxTreeListColumn;
+    dxRangeControl1: TdxRangeControl;
+    dxLayoutItem3: TdxLayoutItem;
+    dxToggleSwitch1: TdxToggleSwitch;
+    dxLayoutItem6: TdxLayoutItem;
+    dxSparklineEdit1: TdxSparklineEdit;
+    dxLayoutItem8: TdxLayoutItem;
+    dxActivityIndicator1: TdxActivityIndicator;
+    dxLayoutItem9: TdxLayoutItem;
+    cxListBox1: TcxListBox;
+    dxLayoutItem10: TdxLayoutItem;
     procedure FormCreate(Sender: TObject);
     procedure cxButton1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -207,36 +193,26 @@ begin
 end;
 
 procedure TServerForm1.cxButton6Click(Sender: TObject);
-var
-  Stream: TMemoryStream;
+//var
+//  Stream: TMemoryStream;
 begin
-  Stream := TMemoryStream.Create;
-
-//  cxTreeList1.StoreToStream(Stream,'TEST');
-   cxTreeList1.SaveToStream(Stream);
-  FServerUnit.SendToAll(ITEM_LIST, Stream);
-
-  Stream.Free;
+//  Stream := TMemoryStream.Create;
+//
+////  cxTreeList1.StoreToStream(Stream,'TEST');
+//   cxTreeList1.SaveToStream(Stream);
+//  FServerUnit.SendToAll(ITEM_LIST, Stream);
+//
+//  Stream.Free;
 
 //  FServerUnit.SendToStream(ITEM_LIST, Stream);
 end;
 
 procedure TServerForm1.cxTextEdit1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-var
-  MemoryStream: TMemoryStream;
-  SendString: String;
 begin
   if Key = VK_RETURN then
   begin
-    MemoryStream := TMemoryStream.Create;
-    try
-      SendString := cxTextEdit1.Text;
-      MemoryStream.WriteBuffer(Pointer(SendString)^, Length(SendString));
-      FServerUnit.SendToAll(TMessageKind.TEXT, MemoryStream);
-      cxTextEdit1.Text := EmptyStr;
-    finally
-      MemoryStream.Free;
-    end;
+    FServerUnit.SendToAll(cxTextEdit1.Text);
+    cxTextEdit1.Text := EmptyStr;
   end;
 end;
 

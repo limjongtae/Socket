@@ -63,7 +63,7 @@ type
     procedure RequestUserInfomation(Context: TidContext);
     procedure Send(Context: TIdContext; MsgData: TMessageKind; Text: String);
 //    procedure SendToAll(MsgData: TMessageKind; Text: String);
-    procedure SendToAll(AKind: TMessageKind; AStream: TMemoryStream);
+    procedure SendToAll(AText: string);
 
     // 1. Stream으로 모든 메세지 보내기
     // 2. 아이템 추가했을때 메세지 보내기
@@ -188,7 +188,6 @@ begin
 //  finally
 //    SetLength(CommandBuffer, 0);
 //  end;
-
 //  if AContext.Connection.SendCmd('TEST',1) = 1 then
 //  begin
 //    MessageRecord.Kind := TMessageKind.TEXT;
@@ -216,16 +215,45 @@ end;
 procedure TServerUnit.DoExecute(AContext: TIdContext);
 var
   MessageRecord: TMessage;
-  CommandRecord: TCommand;
-  MessageBuffer, CommandBuffer: TIdBytes;
-//  ACommand: TGenericRecord<TCommand>;
-//  ARecord: TGenericRecord<TMessage>;
-  Buffer: TIdBytes;
-//  Buffer: TBytes;
-  Text: String;
-  C: Char;
-  GenericRecord: TGenericRecord<TMessage>;
+  MessageBuffer: TIdBytes;
+  Stream: TStream;
+  S: string;
 begin
+
+  try
+    AContext.Connection.IOHandler.ReadBytes(MessageBuffer, SizeOf(TMessage));
+    BytesToRaw(MessageBuffer, MessageRecord, SizeOf(TMessage));
+
+    case MessageRecord.Kind of
+      TMessageKind.TEXT:
+      begin
+        S := AContext.Connection.IOHandler.ReadLn;
+
+        if Length(S) > 0 then
+          OnContextPrinting(S);
+      end;
+      TMessageKind.ITEM_LIST:
+      begin
+        Stream := TMemoryStream.Create;
+        try
+          AContext.Connection.IOHandler.ReadStream(Stream, MessageRecord.Size, False);
+        finally
+          Stream.Free;
+        end;
+      end;
+    end;
+  finally
+    SetLength(MessageBuffer, 0);
+  end;
+//  Size := AContext.Connection.IOHandler.InputBuffer.Size;
+
+//  AContext.Connection.IOHandler.ReadTimeout := 5000; // 1 second timeout
+
+//  Size := AContext.Connection.IOHandler.read
+//
+//  if Size <= 0 then
+//    Exit;
+
 ////  AContext.Connection.IOHandler.ReadBytes(Buffer, SizeOf(Buffer));
 ////
 ////  ACommand := TGenericRecord<TCommand>.Create;
@@ -240,16 +268,22 @@ begin
 ////
 ////  if C = '1' then
 ////  begin
-//    AContext.Connection.IOHandler.ReadBytes(MessageBuffer, SizeOf(TMessage));
-//    BytesToRaw(MessageBuffer, MessageRecord, SizeOf(TMessage));
+//    MessageStream := TMemoryStream.Create;
+//    AContext.Connection.IOHandler.LargeStream := True;
+//    AContext.Connection.IOHandler.ReadStream(MessageStream, 0 , True);
+////    AContext.Connection.IOHandler.ReadBytes(MessageBuffer, SizeOf(TMessage));
+//    BytesToRaw(MessageBuffer, MessageStream, MessageStream.Size);
+////    Size := MessageRecord.Size;
 //    try
-////      case MessageRecord.Kind of
-////        TMessageKind.TEXT : OnContextPrinting(MESSAGEDATETIME + MessageRecord.Msg + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
-////      end;
+//      case MessageRecord.Kind of
+//        TMessageKind.TEXT : OnContextPrinting(MESSAGEDATETIME + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
+//      end;
 //    finally
-//      SetLength(MessageBuffer, 0); // BytesToRaw 메모리 할당영역 해제
+////      SetLength(MessageBuffer, 0); // BytesToRaw 메모리 할당영역 해제
 //    end;
-////  end;
+//    MessageStream.Free;
+
+//  end;
 //
 //
 //  OnContextPrinting(MESSAGEDATETIME + Text + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
@@ -275,8 +309,8 @@ begin
 ////    SetLength(CommandBuffer, 0); // BytesToRaw 메모리 할당영역 해제
 ////  end;
 //
-////  if AContext.Connection.CheckResponse(AContext.Connection.LastCmdResult.NumericCode, [200]) = 200 then
-////    AContext.Connection.IOHandler.WriteLn('SUCCESS');
+//  if AContext.Connection.CheckResponse(AContext.Connection.LastCmdResult.NumericCode, [200]) = 200 then
+//    AContext.Connection.IOHandler.WriteLn('SUCCESS');
 ///
 ///
 //  GenericRecord := TGenericRecord<TMessage>.Create;
@@ -287,6 +321,14 @@ begin
 //  case MessageRecord.Kind of
 //    TMessageKind.TEXT: ;
 //  end;
+//  MessageStream := TMemoryStream.Create;
+
+//  AContext.Connection.IOHandler.ReadStream(MessageStream);
+//  MessageStream.Read(Buffer, MessageStream.Size);
+//  S := BytesToStr(Buffer);
+//
+//  OnContextPrinting(MESSAGEDATETIME + S + AContext.Binding.PeerIP + ':' + IntToStr(AContext.Binding.PeerPort));
+//  MessageStream.Free;
 end;
 
 procedure TServerUnit.DoStatus(ASender: TObject; const AStatus: TIdStatus; const AStatusText: string);
@@ -437,7 +479,7 @@ begin
   end;
 end;
 
-procedure TServerUnit.SendToAll(AKind: TMessageKind; AStream: TMemoryStream);
+procedure TServerUnit.SendToAll(AText: string);
 var
   i: Integer;
   ContextList: TList;
@@ -447,7 +489,7 @@ var
   s1, s2: SmallInt;
   GenericRecord: TGenericRecord<TMessage>;
   MessageRecord: TMessage;
-  Buffer: TIdBytes;
+  MessageBuffer: TIdBytes;
   Size: Int64;
 begin
   try
@@ -508,18 +550,26 @@ begin
 
 //      a := TGenericRecord<TMessage>.Create;
 //      a.
+
+      MessageRecord.Kind := TMessageKind.TEXT;
+      MessageRecord.Size := Length(AText);
+
+      MessageBuffer := RawToBytes(MessageRecord, SizeOf(MessageRecord));
+
       try
         for i := 0 to ContextList.Count - 1 do
         begin
-          TIdContext(ContextList.Items[i]).Connection.IOHandler.LargeStream := True;
-//          TIdContext(ContextList.Items[i]).Connection.IOHandler.Write(LBuffer, SizeOf(MessageRecord.Kind));
-          TIdContext(ContextList.Items[i]).Connection.IOHandler.Write(AStream, 0, True);
+//          TIdContext(ContextList.Items[i]).Connection.IOHandler.LargeStream := True;
+          TIdContext(ContextList.Items[i]).Connection.IOHandler.Write(MessageBuffer, SizeOf(MessageRecord));
+          TIdContext(ContextList.Items[i]).Connection.IOHandler.WriteLn(AText);
+//          TIdContext(ContextList.Items[i]).Connection.IOHandler.Write(AStream, 0, True);
 //          TIdContext(ContextList.Items[i]).Connection.IOHandler.
         end;
       finally
 //        FreeMem(MessageRecord);
 //        SetLength(MessageRecord, 0);
 //        MemoryStream.Free;
+       SetLength(MessageBuffer, 0);
       end;
     finally
       Contexts.UnlockList;

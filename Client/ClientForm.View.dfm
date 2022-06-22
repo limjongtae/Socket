@@ -184,6 +184,7 @@ object ClientForm1: TClientForm1
       ''
       ''
       ''
+      ''
       '')
   end
   object cxButton5: TcxButton

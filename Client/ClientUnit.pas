@@ -58,6 +58,7 @@ type
     destructor Destroy; override;
 
     procedure Send(Text: String);
+    procedure SendStream(AStream: TStream);
     procedure UserInformationResponese;
 
     procedure DoConnected(Sender: TObject);
@@ -99,6 +100,8 @@ begin
   // Read Thread Create
   FClientThread := TClientThread.Create(Self);
   FUserData := TUserData.Create;
+
+//  IOHandler.DefStringEncoding := IndyTextEncoding_UTF8;
 
 //  Greeting.Clear;
 //  Greeting.SetReply(200,'SENDCMD');
@@ -181,27 +184,16 @@ end;
 procedure TClientUnit.Send(Text: String);
 var
   MessageRecord: TMessage;
-  CommandRecord: TCommand;
-  CommandBuffer, MessageBuffer: TIdBytes;
+  MessageBuffer: TIdBytes;
 begin
-  // Send Command
-//  CommandRecord.Kind := TCommandKind.SEND_MESSAGE;
-//  CommandRecord.TimeStamp := Now;
-//
-//  CommandBuffer := RawToBytes(CommandRecord, SizeOf(CommandRecord));
-//  try
-//    IOHandler.Write(CommandBuffer);
-//  finally
-//    SetLength(CommandBuffer, 0);
-//  end;
 
-  //SendMessage
   MessageRecord.Kind := TMessageKind.TEXT;
-//  MessageRecord.Msg := Text;
+  MessageRecord.Size := Length(Text);
 
-  MessageBuffer := RawToBytes(MessageRecord, SizeOf(TMessage));
+  MessageBuffer := RawToBytes(MessageRecord, SizeOf(MessageRecord));
   try
     IOHandler.Write(MessageBuffer);
+    IOHandler.WriteLn(Text);
   finally
     SetLength(MessageBuffer, 0);
   end;
@@ -216,6 +208,24 @@ procedure TClientUnit.SendItemList(ASender: TObject; AMemoryStream: TMemoryStrea
 begin
   if Assigned(OnSendItemList) then
     OnSendItemList(ASender, AMemoryStream);
+end;
+
+procedure TClientUnit.SendStream(AStream: TStream);
+var
+  MessageRecord: TMessage;
+  MessageBuffer: TIdBytes;
+begin
+  MessageRecord.Kind := TMessageKind.ITEM_LIST;
+  MessageRecord.Size := AStream.Size;
+
+  MessageBuffer := RawToBytes(MessageRecord, SizeOf(MessageRecord));
+  try
+    IOHandler.Write(MessageBuffer);
+    IOHandler.LargeStream := True;
+    IOHandler.Write(AStream, AStream.Size);
+  finally
+    SetLength(MessageBuffer, 0);
+  end;
 end;
 
 procedure TClientUnit.StatusNotify(ClientStatus: PClientStuats);
@@ -260,47 +270,70 @@ var
   Stream: TMemoryStream;
   Image: TdxSmartImage;
   LBuffer: TIdBytes;
-  _Message: PMessage;
   CommandRecord: TCommand;
   S: String;
   I: integer;
   SendMessage: String;
   Size: TBytes;
   SendStream: TMemoryStream;
-  GenericRecord: TGenericRecord<TMessage>;
   Buffer: TIdBytes;
   MessageRecord: TMessage;
   reader: TStreamReader;
 begin
   while not Terminated do
   begin
-    StopWatch := TStopwatch.StartNew;
-    repeat
-      // 이걸 제거하면 스레드 재기동 문제가 해결되는데.. 제거하면 CPU 점유율이 미친듯이 올라감..
-      // 어떻게 해결해야될까
-      // CheckForDisconnect 메서드에 뭔가 문제가있는데.. 뭐지 ... 모르겟네
-      // Client.IOHandler.CheckForDisconnect(True, True);
-
-      Client.IOHandler.CheckForDataOnSource(100);
-
-      if StopWatch.ElapsedMilliseconds > WAITTIME then // 진행시간 - 시작시간 > 3초보다크면 읽기 종료
-      begin
-        Client.Received(Self,  MESSAGEDATETIME + 'Reading....', nil);
-        Break;
-      end;
-//      WaitForSingleObject( Handle, 10 );
-    until not Client.IOHandler.InputBufferIsEmpty;
+//    StopWatch := TStopwatch.StartNew;
+//    repeat
+//      // 이걸 제거하면 스레드 재기동 문제가 해결되는데.. 제거하면 CPU 점유율이 미친듯이 올라감..
+//      // 어떻게 해결해야될까
+//      // CheckForDisconnect 메서드에 뭔가 문제가있는데.. 뭐지 ... 모르겟네
+//      // Client.IOHandler.CheckForDisconnect(True, True);
 //
-//    until not Client.LastCmdResult.NumericCode > 0;
+//      Client.IOHandler.CheckForDataOnSource(1000);
+//
+//      if StopWatch.ElapsedMilliseconds > WAITTIME then // 진행시간 - 시작시간 > 3초보다크면 읽기 종료
+//      begin
+//        Client.Received(Self,  MESSAGEDATETIME + 'Reading....', nil);
+//        Break;
+//      end;
+////      WaitForSingleObject( Handle, 10 );
+//    until not Client.IOHandler.InputBufferIsEmpty;
+////
+////    until not Client.LastCmdResult.NumericCode > 0;
+//
+//    if StopWatch.ElapsedMilliseconds > WAITTIME then
+//      Continue;
 
-    if StopWatch.ElapsedMilliseconds > WAITTIME then
-      Continue;
+//    Client.IOHandler.CheckForDataOnSource(1000);
 
-    StopWatch := TStopwatch.StartNew;
+  //    StopWatch := TStopwatch.StartNew;
     try
+      Client.IOHandler.ReadBytes(Buffer, SizeOf(MessageRecord));
+      BytesToRaw(Buffer, MessageRecord, SizeOf(MessageRecord));
+
+      case MessageRecord.Kind of
+        TEXT:
+        begin
+          S := Client.IOHandler.ReadLn;
+
+          if Length(S) > 0 then
+            Client.ClientMessage(nil, S);
+        end;
+        TMessageKind.IMAGE: ;
+        EVENT: ;
+        PUSH: ;
+        NOTICE: ;
+        REQUEST_USER_INFORMATION: ;
+        RESPONSE_USER_INFORMATION: ;
+        ITEM_LIST: ;
+      end;
+
+    finally
+      SetLength(Buffer, 0);
+    end;
 
 
-      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
+//      ElapsedMillseconds := StopWatch.ElapsedMilliseconds;
 //      if Client.LastCmdResult.NumericCode = 200 then
 //      if Client.GetResponse([200]) = 200 then
 //      Client.DoClientMessage(nil, Client.IOHandler.ReadLn());
@@ -363,16 +396,16 @@ begin
 //        Client.ClientMessage(Self, MESSAGEDATETIME + 'ITEMLIST' + Format('[Byte / %d s ]', [ElapsedMillseconds]));
 //        Stream.Free;
 
-    Stream := TMemoryStream.Create;
-    try
-      Client.IOHandler.LargeStream := True;
-      Client.IOHandler.ReadStream(Stream);
-      Stream.Position := 0;
-      Client.SendItemList(Self, Stream);
-    finally
-      Stream.Free;
+//    Stream := TMemoryStream.Create;
+//    try
+//      Client.IOHandler.LargeStream := True;
+//      Client.IOHandler.ReadStream(Stream);
+//      Stream.Position := 0;
+//      Client.SendItemList(Self, Stream);
+//    finally
+//      Stream.Free;
 //      Image.Free;
-    end;
+//    end;
 
 
 
@@ -442,11 +475,11 @@ begin
 ////      _Message.Stream.Free;
 //      FreeMem(_Message);
 //      Stream.Free;
-    finally
+//    finally
 //      Stream.Free;
 //      GenericRecord.Free;
 //      SetLength(LBuffer, 0); // BytesToRaw 메모리 할당영역 해제
-    end;
+//    end;
 //    MemoryStream := TMemoryStream.Create;
 //    try
 //      Client.IOHandler.LargeStream := True;
